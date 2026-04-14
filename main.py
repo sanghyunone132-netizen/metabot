@@ -1,15 +1,19 @@
 from datetime import datetime
-
-# ========================
-# KEEP ALIVE (Render 유지용)
-# ========================
+import discord
+from discord.ext import commands
+import json
+import random
+import asyncio
 import requests
 import threading
 import time
 import os
 
+# ========================
+# KEEP ALIVE (Render 유지용)
+# ========================
 def keep_alive():
-    url = "https://github.com/sanghyunone132-netizen/metabot"  # ← 반드시 수정
+    url = "https://metabot-am7j.onrender.com"
 
     while True:
         try:
@@ -18,10 +22,9 @@ def keep_alive():
         except:
             print("ping failed")
 
-        time.sleep(300)  # 5분마다 ping
+        time.sleep(300)
 
 threading.Thread(target=keep_alive).start()
-
 
 # ========================
 # TOKEN
@@ -88,9 +91,6 @@ luck_list = [
     "희귀한 지형을 찾았다면 필요 없더라도 홈으로 설정해두세요! 나중에 찾게 될 거예요!"
 ]
 
-# ========================
-# 데이터 저장
-# ========================
 DATA_FILE = "luck_data.json"
 
 def load_data():
@@ -108,9 +108,6 @@ def save_data(data):
 
 last_luck = load_data()
 
-# ========================
-# 채널 제한
-# ========================
 allowed_channel_ids = [
     1488183193298407484,
     1493530735347368087
@@ -119,9 +116,6 @@ allowed_channel_ids = [
 tax_check = set()
 tax_active = False
 
-# ========================
-# 메시지 이벤트
-# ========================
 @bot.event
 async def on_message(message):
 
@@ -133,7 +127,6 @@ async def on_message(message):
     if message.channel.id not in allowed_channel_ids:
         return
 
-    # 운세
     if message.content == "오늘의 운세":
         user_id = str(message.author.id)
         today = str(datetime.now().date())
@@ -149,7 +142,6 @@ async def on_message(message):
             f"{message.author.mention} 🎲 {random.choice(luck_list)}"
         )
 
-    # 등록금 체크
     if message.content == "등록금 납부":
         if tax_active:
             tax_check.add(message.author.id)
@@ -157,9 +149,15 @@ async def on_message(message):
 
     await bot.process_commands(message)
 
-# ========================
-# 시간 이벤트
-# ========================
+async def send_all_channels(text):
+    for guild in bot.guilds:
+        for channel in guild.text_channels:
+            if channel.id in allowed_channel_ids:
+                try:
+                    await channel.send(text)
+                except:
+                    pass
+
 async def time_scheduler():
 
     global tax_active
@@ -192,19 +190,9 @@ async def time_scheduler():
 
         await asyncio.sleep(30)
 
-# ========================
-# 채널 전송
-# ========================
-async def send_all_channels(text):
-    for guild in bot.guilds:
-        for channel in guild.text_channels:
-            if channel.id in allowed_channel_ids:
-                try:
-                    await channel.send(text)
-                except:
-                    pass
+@bot.event
+async def on_ready():
+    print("봇 실행됨")
+    bot.loop.create_task(time_scheduler())
 
-# ========================
-# 실행
-# ========================
 bot.run(TOKEN)
