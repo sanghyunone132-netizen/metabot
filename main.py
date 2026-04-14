@@ -10,23 +10,6 @@ import time
 import os
 
 # ========================
-# KEEP ALIVE (Render 유지용)
-# ========================
-def keep_alive():
-    url = "https://metabot-am7j.onrender.com"
-
-    while True:
-        try:
-            requests.get(url)
-            print("ping success")
-        except:
-            print("ping failed")
-
-        time.sleep(300)
-
-threading.Thread(target=keep_alive, daemon=True).start()
-
-# ========================
 # TOKEN
 # ========================
 TOKEN = os.getenv("TOKEN")
@@ -41,7 +24,24 @@ intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 # ========================
-# 운세 45개
+# KEEP ALIVE (Render용)
+# ========================
+def keep_alive():
+    url = "https://metabot-am7j.onrender.com"  # Render 서비스 URL
+
+    while True:
+        try:
+            requests.get(url, timeout=10)
+            print("ping success")
+        except Exception as e:
+            print("ping failed:", e)
+
+        time.sleep(300)
+
+threading.Thread(target=keep_alive, daemon=True).start()
+
+# ========================
+# 운세 데이터
 # ========================
 luck_list = [
     "오늘은 두리가 컨디션이 좋은 것 같아요! 인챈트를 시도해보세요!",
@@ -108,6 +108,9 @@ def save_data(data):
 
 last_luck = load_data()
 
+# ========================
+# 허용 채널
+# ========================
 allowed_channel_ids = [
     1488183193298407484,
     1493530735347368087
@@ -117,11 +120,10 @@ tax_check = set()
 tax_active = False
 
 # ========================
-# 메시지 이벤트
+# 메시지 처리
 # ========================
 @bot.event
 async def on_message(message):
-
     global tax_active
 
     if message.author.bot:
@@ -153,7 +155,7 @@ async def on_message(message):
     await bot.process_commands(message)
 
 # ========================
-# 채널 전송
+# 전체 채널 전송
 # ========================
 async def send_all_channels(text):
     for guild in bot.guilds:
@@ -168,7 +170,6 @@ async def send_all_channels(text):
 # 스케줄러
 # ========================
 async def time_scheduler():
-
     global tax_active
 
     while True:
@@ -190,7 +191,6 @@ async def time_scheduler():
         if weekday == 6 and hour == 0 and minute == 0:
             tax_active = True
             tax_check.clear()
-
             await send_all_channels(
                 "💰 오늘은 크루시오 마을의 등록금 납부일이에요!\n등록금 납부 후, 이 메시지에 체크해주세요!"
             )
@@ -198,7 +198,7 @@ async def time_scheduler():
         await asyncio.sleep(30)
 
 # ========================
-# 시작
+# 실행 (핵심)
 # ========================
 @bot.event
 async def on_ready():
