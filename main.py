@@ -13,7 +13,7 @@ import os
 # KEEP ALIVE (Render 유지용)
 # ========================
 def keep_alive():
-    url = "https://metabot-am7j.onrender.com"
+    url = "https://metabot-am7j.onrender.com"  # ← 여기가 진짜 URL
 
     while True:
         try:
@@ -192,7 +192,7 @@ async def time_scheduler():
 
 @bot.event
 async def on_ready():
-    print("봇 실행됨")
-    bot.loop.create_task(time_scheduler())
+    asyncio.create_task(time_scheduler())
+    print("bot ready")
 
 bot.run(TOKEN)
