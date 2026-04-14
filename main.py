@@ -8,20 +8,12 @@ import requests
 import threading
 import time
 import os
-import sys
-import asyncio
 
-if __name__ == "__main__":
-    try:
-        bot.run(TOKEN)
-    except Exception as e:
-        print(e)
-        sys.exit(1)
 # ========================
 # KEEP ALIVE (Render 유지용)
 # ========================
 def keep_alive():
-    url = "https://metabot-am7j.onrender.com"  # Render URL
+    url = "https://metabot-am7j.onrender.com"
 
     while True:
         try:
@@ -99,9 +91,6 @@ luck_list = [
     "희귀한 지형을 찾았다면 필요 없더라도 홈으로 설정해두세요! 나중에 찾게 될 거예요!"
 ]
 
-# ========================
-# 데이터 저장
-# ========================
 DATA_FILE = "luck_data.json"
 
 def load_data():
@@ -119,9 +108,6 @@ def save_data(data):
 
 last_luck = load_data()
 
-# ========================
-# 채널 제한
-# ========================
 allowed_channel_ids = [
     1488183193298407484,
     1493530735347368087
@@ -135,6 +121,7 @@ tax_active = False
 # ========================
 @bot.event
 async def on_message(message):
+
     global tax_active
 
     if message.author.bot:
@@ -143,7 +130,6 @@ async def on_message(message):
     if message.channel.id not in allowed_channel_ids:
         return
 
-    # 운세
     if message.content == "오늘의 운세":
         user_id = str(message.author.id)
         today = str(datetime.now().date())
@@ -159,7 +145,6 @@ async def on_message(message):
             f"{message.author.mention} 🎲 {random.choice(luck_list)}"
         )
 
-    # 등록금 납부
     if message.content == "등록금 납부":
         if tax_active:
             tax_check.add(message.author.id)
@@ -180,9 +165,10 @@ async def send_all_channels(text):
                     pass
 
 # ========================
-# 시간 스케줄러
+# 스케줄러
 # ========================
 async def time_scheduler():
+
     global tax_active
 
     while True:
@@ -204,6 +190,7 @@ async def time_scheduler():
         if weekday == 6 and hour == 0 and minute == 0:
             tax_active = True
             tax_check.clear()
+
             await send_all_channels(
                 "💰 오늘은 크루시오 마을의 등록금 납부일이에요!\n등록금 납부 후, 이 메시지에 체크해주세요!"
             )
@@ -211,7 +198,7 @@ async def time_scheduler():
         await asyncio.sleep(30)
 
 # ========================
-# 실행
+# 시작
 # ========================
 @bot.event
 async def on_ready():
