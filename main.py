@@ -1,15 +1,32 @@
-import discord
-from discord.ext import commands
-import random
-import os
-import json
-import asyncio
 from datetime import datetime
+
+# ========================
+# KEEP ALIVE (Render 유지용)
+# ========================
+import requests
+import threading
+import time
+
+def keep_alive():
+    url = "https://github.com/sanghyunone132-netizen/metabot"  # ← 반드시 수정
+
+    while True:
+        try:
+            requests.get(url)
+            print("ping success")
+        except:
+            print("ping failed")
+
+        time.sleep(300)  # 5분마다 ping
+
+threading.Thread(target=keep_alive).start()
+
 
 # ========================
 # TOKEN
 # ========================
 TOKEN = os.getenv("TOKEN")
+
 # ========================
 # Discord 설정
 # ========================
@@ -20,7 +37,7 @@ intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 # ========================
-# 운세 45개 (그대로 유지)
+# 운세 45개
 # ========================
 luck_list = [
     "오늘은 두리가 컨디션이 좋은 것 같아요! 인챈트를 시도해보세요!",
@@ -71,7 +88,7 @@ luck_list = [
 ]
 
 # ========================
-# 데이터 저장 (운세 유지)
+# 데이터 저장
 # ========================
 DATA_FILE = "luck_data.json"
 
@@ -98,9 +115,6 @@ allowed_channel_ids = [
     1493530735347368087
 ]
 
-# ========================
-# 등록금 체크 시스템 (체크만)
-# ========================
 tax_check = set()
 tax_active = False
 
@@ -118,9 +132,7 @@ async def on_message(message):
     if message.channel.id not in allowed_channel_ids:
         return
 
-    # ========================
-    # 오늘의 운세 (하루 1번)
-    # ========================
+    # 운세
     if message.content == "오늘의 운세":
         user_id = str(message.author.id)
         today = str(datetime.now().date())
@@ -136,9 +148,7 @@ async def on_message(message):
             f"{message.author.mention} 🎲 {random.choice(luck_list)}"
         )
 
-    # ========================
-    # 등록금 체크 (단순 체크)
-    # ========================
+    # 등록금 체크
     if message.content == "등록금 납부":
         if tax_active:
             tax_check.add(message.author.id)
@@ -160,20 +170,16 @@ async def time_scheduler():
         day = now.day
         weekday = now.weekday()
 
-        # 11:50 접속 보상
         if hour == 11 and minute == 50:
             await send_all_channels("🎁 곧 접속 시간이 초기화됩니다! 접속 보상을 받는 걸 잊지 마세요!")
 
-        # 03:00 스태미나
         if hour == 3 and minute == 0:
             await send_all_channels("💪 스태미나가 초기화되었습니다! 오늘도 파이팅!")
 
-        # 03:00 요리 시세
         if hour == 3 and minute == 0:
             if day == 1 or day % 3 == 0:
                 await send_all_channels("🍳 요리 시세가 변동되었습니다! 이번엔 어떤 요리가 좋을까요?")
 
-        # 일요일 등록금 시작
         if weekday == 6 and hour == 0 and minute == 0:
             tax_active = True
             tax_check.clear()
