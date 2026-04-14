@@ -6,6 +6,7 @@ from datetime import datetime
 import requests
 import threading
 import time
+import os
 
 def keep_alive():
     url = "https://github.com/sanghyunone132-netizen/metabot"  # ← 반드시 수정
