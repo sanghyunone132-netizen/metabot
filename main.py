@@ -13,7 +13,7 @@ import os
 # KEEP ALIVE (Render 유지용)
 # ========================
 def keep_alive():
-    url = "https://metabot-am7j.onrender.com"  # ← 여기가 진짜 URL
+    url = "https://metabot-am7j.onrender.com"  # Render URL
 
     while True:
         try:
@@ -24,7 +24,7 @@ def keep_alive():
 
         time.sleep(300)
 
-threading.Thread(target=keep_alive).start()
+threading.Thread(target=keep_alive, daemon=True).start()
 
 # ========================
 # TOKEN
@@ -91,6 +91,9 @@ luck_list = [
     "희귀한 지형을 찾았다면 필요 없더라도 홈으로 설정해두세요! 나중에 찾게 될 거예요!"
 ]
 
+# ========================
+# 데이터 저장
+# ========================
 DATA_FILE = "luck_data.json"
 
 def load_data():
@@ -108,6 +111,9 @@ def save_data(data):
 
 last_luck = load_data()
 
+# ========================
+# 채널 제한
+# ========================
 allowed_channel_ids = [
     1488183193298407484,
     1493530735347368087
@@ -116,9 +122,11 @@ allowed_channel_ids = [
 tax_check = set()
 tax_active = False
 
+# ========================
+# 메시지 이벤트
+# ========================
 @bot.event
 async def on_message(message):
-
     global tax_active
 
     if message.author.bot:
@@ -127,6 +135,7 @@ async def on_message(message):
     if message.channel.id not in allowed_channel_ids:
         return
 
+    # 운세
     if message.content == "오늘의 운세":
         user_id = str(message.author.id)
         today = str(datetime.now().date())
@@ -142,6 +151,7 @@ async def on_message(message):
             f"{message.author.mention} 🎲 {random.choice(luck_list)}"
         )
 
+    # 등록금 납부
     if message.content == "등록금 납부":
         if tax_active:
             tax_check.add(message.author.id)
@@ -149,6 +159,9 @@ async def on_message(message):
 
     await bot.process_commands(message)
 
+# ========================
+# 채널 전송
+# ========================
 async def send_all_channels(text):
     for guild in bot.guilds:
         for channel in guild.text_channels:
@@ -158,8 +171,10 @@ async def send_all_channels(text):
                 except:
                     pass
 
+# ========================
+# 시간 스케줄러
+# ========================
 async def time_scheduler():
-
     global tax_active
 
     while True:
@@ -175,24 +190,24 @@ async def time_scheduler():
         if hour == 3 and minute == 0:
             await send_all_channels("💪 스태미나가 초기화되었습니다! 오늘도 파이팅!")
 
-        if hour == 3 and minute == 0:
-            if day == 1 or day % 3 == 0:
-                await send_all_channels("🍳 요리 시세가 변동되었습니다! 이번엔 어떤 요리가 좋을까요?")
+        if hour == 3 and minute == 0 and (day == 1 or day % 3 == 0):
+            await send_all_channels("🍳 요리 시세가 변동되었습니다! 이번엔 어떤 요리가 좋을까요?")
 
         if weekday == 6 and hour == 0 and minute == 0:
             tax_active = True
             tax_check.clear()
-
             await send_all_channels(
-                "💰 오늘은 크루시오 마을의 등록금 납부일이에요!\n"
-                "등록금 납부 후, 이 메시지에 체크해주세요!"
+                "💰 오늘은 크루시오 마을의 등록금 납부일이에요!\n등록금 납부 후, 이 메시지에 체크해주세요!"
             )
 
         await asyncio.sleep(30)
 
+# ========================
+# 실행
+# ========================
 @bot.event
 async def on_ready():
-    asyncio.create_task(time_scheduler())
     print("bot ready")
+    asyncio.create_task(time_scheduler())
 
 bot.run(TOKEN)
