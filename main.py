@@ -8,7 +8,15 @@ import requests
 import threading
 import time
 import os
+import sys
+import asyncio
 
+if __name__ == "__main__":
+    try:
+        bot.run(TOKEN)
+    except Exception as e:
+        print(e)
+        sys.exit(1)
 # ========================
 # KEEP ALIVE (Render 유지용)
 # ========================
