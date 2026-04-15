@@ -129,6 +129,16 @@ async def on_message(message):
     if message.channel.id not in allowed_channel_ids:
         return
 
+    # ========================
+    # ⭐ 추가 기능: 현재 시간 확인
+    # ========================
+    if message.content == "!시간":
+        now = datetime.now()
+        await message.channel.send(
+            f"🕒 현재 시간: {now.year}-{now.month:02}-{now.day:02} "
+            f"{now.hour:02}:{now.minute:02}:{now.second:02}"
+        )
+
     if message.content == "오늘의 운세":
         user_id = str(message.author.id)
         today = str(datetime.now().date())
@@ -187,7 +197,7 @@ async def send_all_channels(text):
                     pass
 
 # ========================
-# ⭐ 수정된 부분 (여기만 추가)
+# 시간 체크 루프
 # ========================
 @tasks.loop(minutes=1)
 async def time_checker():
