@@ -15,7 +15,9 @@ def home():
     return "I'm alive"
 
 def keep_alive():
-    app.run(host='0.0.0.0', port=8080)
+    t = Thread(target=lambda: app.run(host='0.0.0.0', port=8080))
+    t.daemon = True
+    t.start()
 
 # ========================
 # 실행 모드
@@ -103,7 +105,7 @@ def load_data():
 
 def save_data(data):
     with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
+        json.dump(data, ensure_ascii=False, indent=4)
 
 last_luck = load_data()
 
@@ -115,16 +117,11 @@ allowed_channel_ids = [
     1493530735347368087
 ]
 
-tax_check = set()
-tax_active = False
-
 # ========================
 # 메시지 이벤트
 # ========================
 @bot.event
 async def on_message(message):
-
-    global tax_active
 
     if message.author.bot:
         return
@@ -148,14 +145,12 @@ async def on_message(message):
         )
 
     if message.content == "등록금 납부":
-        if tax_active:
-            tax_check.add(message.author.id)
-            await message.add_reaction("✅")
+        await message.add_reaction("✅")
 
     await bot.process_commands(message)
 
 # ========================
-# 단일 실행용 함수 (추가됨)
+# run_once (유지)
 # ========================
 async def run_once():
 
@@ -193,21 +188,14 @@ async def send_all_channels(text):
                     pass
 
 # ========================
-# 봇 시작
+# on_ready
 # ========================
 @bot.event
 async def on_ready():
     print(f"{bot.user} 로그인 완료!")
 
-    if MODE == "once":
-        await run_once()
-        await bot.close()
-    else:
-        print("일반 실행 모드")
-
-import threading
-
-def keep_alive():
-    t = threading.Thread(target=lambda: app.run(host='0.0.0.0', port=8080))
-    t.daemon = True
-    t.start()
+# ========================
+# 실행
+# ========================
+keep_alive()
+bot.run(TOKEN)
