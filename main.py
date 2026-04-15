@@ -14,12 +14,8 @@ app = Flask('')
 def home():
     return "I'm alive"
 
-def run():
-    app.run(host='0.0.0.0', port=8080)
-
 def keep_alive():
-    t = Thread(target=run)
-    t.start()
+    app.run(host='0.0.0.0', port=8080)
 
 # ========================
 # 실행 모드
@@ -209,8 +205,9 @@ async def on_ready():
     else:
         print("일반 실행 모드")
 
-# ========================
-# 실행
-# ========================
-keep_alive()
-bot.run(TOKEN)
+import threading
+
+def keep_alive():
+    t = threading.Thread(target=lambda: app.run(host='0.0.0.0', port=8080))
+    t.daemon = True
+    t.start()
