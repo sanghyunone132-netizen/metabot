@@ -1,11 +1,15 @@
-from datetime import datetime
 import discord
 from discord.ext import commands
-import json
 import random
-import asyncio
 import os
-import sys
+import json
+import asyncio
+from datetime import datetime
+
+# ========================
+# 실행 모드
+# ========================
+MODE = os.getenv("MODE", "bot")  # bot / once
 
 # ========================
 # TOKEN
@@ -13,7 +17,7 @@ import sys
 TOKEN = os.getenv("TOKEN")
 
 # ========================
-# DISCORD 설정
+# Discord 설정
 # ========================
 intents = discord.Intents.default()
 intents.message_content = True
@@ -22,11 +26,11 @@ intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 # ========================
-# 운세 45개 (전부 유지)
+# 운세 45개
 # ========================
 luck_list = [
     "오늘은 두리가 컨디션이 좋은 것 같아요! 인챈트를 시도해보세요!",
-    "오늘은 두리가 컨디션이 안 좋은 것 같아요! 인챈트는 미루는 게 어떨까요!",
+    "오늘은 두리가 컨디션이 안 좋은 것 같아요! 인챈트는 미루는 게 어떨까요?",
     "오늘은 로니가 컨디션이 좋은 것 같아요! 세이지 도구를 강화해보세요!",
     "오늘은 로니가 컨디션이 안 좋은 것 같아요! 강화는 미루는 게 좋겠어요!",
     "알바가 사고를 칠 것 같아요! 알바 고용은 신중하게 하는 게 좋겠어요!",
@@ -73,7 +77,7 @@ luck_list = [
 ]
 
 # ========================
-# 데이터
+# 데이터 저장
 # ========================
 DATA_FILE = "luck_data.json"
 
@@ -108,13 +112,15 @@ tax_active = False
 # ========================
 @bot.event
 async def on_message(message):
+
+    global tax_active
+
     if message.author.bot:
         return
 
     if message.channel.id not in allowed_channel_ids:
         return
 
-    # 오늘의 운세
     if message.content == "오늘의 운세":
         user_id = str(message.author.id)
         today = str(datetime.now().date())
@@ -130,13 +136,38 @@ async def on_message(message):
             f"{message.author.mention} 🎲 {random.choice(luck_list)}"
         )
 
-    # 등록금 납부 (원문 유지)
     if message.content == "등록금 납부":
         if tax_active:
             tax_check.add(message.author.id)
             await message.add_reaction("✅")
 
     await bot.process_commands(message)
+
+# ========================
+# 단일 실행용 함수 (추가됨)
+# ========================
+async def run_once():
+
+    now = datetime.now()
+    hour = now.hour
+    minute = now.minute
+    day = now.day
+    weekday = now.weekday()
+
+    if hour == 23 and minute >= 50:
+        await send_all_channels("🎁 곧 접속 시간이 초기화됩니다! 접속 보상을 받는 걸 잊지 마세요!")
+
+    if hour == 3:
+        await send_all_channels("💪 스태미나가 초기화되었습니다! 오늘도 파이팅!")
+
+        if day == 1 or day % 3 == 0:
+            await send_all_channels("🍳 요리 시세가 변동되었습니다! 이번엔 어떤 요리가 좋을까요?")
+
+    if weekday == 6 and hour == 0:
+        await send_all_channels(
+            "💰 오늘은 크루시오 마을의 등록금 납부일이에요!\n"
+            "등록금 납부 후, 이 메시지에 체크해주세요!"
+        )
 
 # ========================
 # 채널 전송
@@ -151,53 +182,19 @@ async def send_all_channels(text):
                     pass
 
 # ========================
-# 스케줄러 (원문 유지 + 안정화만 추가)
-# ========================
-async def time_scheduler():
-    await bot.wait_until_ready()
-
-    global tax_active
-
-    while True:
-        now = datetime.now()
-        hour = now.hour
-        minute = now.minute
-        day = now.day
-        weekday = now.weekday()
-
-        if hour == 11 and minute == 50:
-            await send_all_channels("🎁 곧 접속 시간이 초기화됩니다! 접속 보상을 받는 걸 잊지 마세요!")
-
-        if hour == 3 and minute == 0:
-            await send_all_channels("💪 스태미나가 초기화되었습니다! 오늘도 파이팅!")
-
-        if hour == 3 and minute == 0 and (day == 1 or day % 3 == 0):
-            await send_all_channels("🍳 요리 시세가 변동되었습니다! 이번엔 어떤 요리가 좋을까요?")
-
-        if weekday == 6 and hour == 0 and minute == 0:
-            tax_active = True
-            tax_check.clear()
-
-            await send_all_channels(
-                "💰 오늘은 크루시오 마을의 등록금 납부일이에요!\n등록금 납부 후, 이 메시지에 체크해주세요!"
-            )
-
-        await asyncio.sleep(30)
-
-# ========================
-# READY
+# 봇 시작
 # ========================
 @bot.event
 async def on_ready():
-    print("bot ready")
-    asyncio.create_task(time_scheduler())
+    print(f"{bot.user} 로그인 완료!")
+
+    if MODE == "once":
+        await run_once()
+        await bot.close()
+    else:
+        print("일반 실행 모드")
 
 # ========================
-# 실행 (중복 없음)
+# 실행
 # ========================
-if __name__ == "__main__":
-    if not TOKEN:
-        print("TOKEN 없음 (Render 환경변수 확인)")
-        sys.exit(1)
-
-    bot.run(TOKEN)
+bot.run(TOKEN)
