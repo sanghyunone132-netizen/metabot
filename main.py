@@ -1,5 +1,5 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 import random
 import os
 import json
@@ -153,7 +153,6 @@ async def on_message(message):
 # run_once (유지)
 # ========================
 async def run_once():
-
     now = datetime.now()
     hour = now.hour
     minute = now.minute
@@ -163,13 +162,13 @@ async def run_once():
     if hour == 23 and minute >= 50:
         await send_all_channels("🎁 곧 접속 시간이 초기화됩니다! 접속 보상을 받는 걸 잊지 마세요!")
 
-    if hour == 3:
+    if hour == 3 and minute == 0:
         await send_all_channels("💪 스태미나가 초기화되었습니다! 오늘도 파이팅!")
 
         if day == 1 or day % 3 == 0:
             await send_all_channels("🍳 요리 시세가 변동되었습니다! 이번엔 어떤 요리가 좋을까요?")
 
-    if weekday == 6 and hour == 0:
+    if weekday == 6 and hour == 0 and minute == 0:
         await send_all_channels(
             "💰 오늘은 크루시오 마을의 등록금 납부일이에요!\n"
             "등록금 납부 후, 이 메시지에 체크해주세요!"
@@ -188,11 +187,19 @@ async def send_all_channels(text):
                     pass
 
 # ========================
+# ⭐ 수정된 부분 (여기만 추가)
+# ========================
+@tasks.loop(minutes=1)
+async def time_checker():
+    await run_once()
+
+# ========================
 # on_ready
 # ========================
 @bot.event
 async def on_ready():
     print(f"{bot.user} 로그인 완료!")
+    time_checker.start()
 
 # ========================
 # 실행
