@@ -4,7 +4,7 @@ import random
 import os
 import json
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import Flask
 from threading import Thread
 
@@ -89,9 +89,6 @@ luck_list = [
     "희귀한 지형을 찾았다면 필요 없더라도 홈으로 설정해두세요! 나중에 찾게 될 거예요!"
 ]
 
-# ========================
-# 데이터 저장
-# ========================
 DATA_FILE = "luck_data.json"
 
 def load_data():
@@ -109,17 +106,11 @@ def save_data(data):
 
 last_luck = load_data()
 
-# ========================
-# 채널 제한
-# ========================
 allowed_channel_ids = [
     1488183193298407484,
     1493530735347368087
 ]
 
-# ========================
-# 메시지 이벤트
-# ========================
 @bot.event
 async def on_message(message):
 
@@ -130,7 +121,7 @@ async def on_message(message):
         return
 
     if message.content == "!시간":
-        now = datetime.now()
+        now = datetime.utcnow() + timedelta(hours=9)
         await message.channel.send(
             f"🕒 현재 시간: {now.year}-{now.month:02}-{now.day:02} "
             f"{now.hour:02}:{now.minute:02}:{now.second:02}"
@@ -138,7 +129,7 @@ async def on_message(message):
 
     if message.content == "오늘의 운세":
         user_id = str(message.author.id)
-        today = str(datetime.now().date())
+        today = str((datetime.utcnow() + timedelta(hours=9)).date())
 
         if user_id in last_luck and last_luck[user_id] == today:
             await message.channel.send(f"{message.author.mention} ❗ 오늘 이미 운세를 봤어요!")
@@ -156,17 +147,13 @@ async def on_message(message):
 
     await bot.process_commands(message)
 
-# ========================
-# run_once (수정됨)
-# ========================
 async def run_once():
-    now = datetime.now()
+    now = datetime.utcnow() + timedelta(hours=9)
     hour = now.hour
     minute = now.minute
     day = now.day
     weekday = now.weekday()
 
-    # 🔥 딱 23:50에만 1번 실행
     if hour == 23 and minute == 50:
         await send_all_channels("🎁 곧 접속 시간이 초기화됩니다! 접속 보상을 받는 걸 잊지 마세요!")
 
@@ -182,9 +169,6 @@ async def run_once():
             "등록금 납부 후, 이 메시지에 체크해주세요!"
         )
 
-# ========================
-# 채널 전송
-# ========================
 async def send_all_channels(text):
     for guild in bot.guilds:
         for channel in guild.text_channels:
@@ -194,24 +178,15 @@ async def send_all_channels(text):
                 except:
                     pass
 
-# ========================
-# 시간 체크 루프
-# ========================
 @tasks.loop(minutes=1)
 async def time_checker():
     await run_once()
 
-# ========================
-# on_ready (중복 방지 추가)
-# ========================
 @bot.event
 async def on_ready():
     print(f"{bot.user} 로그인 완료!")
     if not time_checker.is_running():
         time_checker.start()
 
-# ========================
-# 실행
-# ========================
 keep_alive()
 bot.run(TOKEN)
