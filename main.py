@@ -129,9 +129,6 @@ async def on_message(message):
     if message.channel.id not in allowed_channel_ids:
         return
 
-    # ========================
-    # ⭐ 추가 기능: 현재 시간 확인
-    # ========================
     if message.content == "!시간":
         now = datetime.now()
         await message.channel.send(
@@ -160,7 +157,7 @@ async def on_message(message):
     await bot.process_commands(message)
 
 # ========================
-# run_once (유지)
+# run_once (수정됨)
 # ========================
 async def run_once():
     now = datetime.now()
@@ -169,7 +166,8 @@ async def run_once():
     day = now.day
     weekday = now.weekday()
 
-    if hour == 23 and minute >= 50:
+    # 🔥 딱 23:50에만 1번 실행
+    if hour == 23 and minute == 50:
         await send_all_channels("🎁 곧 접속 시간이 초기화됩니다! 접속 보상을 받는 걸 잊지 마세요!")
 
     if hour == 3 and minute == 0:
@@ -204,12 +202,13 @@ async def time_checker():
     await run_once()
 
 # ========================
-# on_ready
+# on_ready (중복 방지 추가)
 # ========================
 @bot.event
 async def on_ready():
     print(f"{bot.user} 로그인 완료!")
-    time_checker.start()
+    if not time_checker.is_running():
+        time_checker.start()
 
 # ========================
 # 실행
